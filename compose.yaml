@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  database:
+    image: postgres
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_PASSWORD: Password
+      POSTGRES_USER: app
+    volumes:
+      - database_data:/var/lib/postgresql/data:rw
+  adminer:
+    image: adminer
+    ports:
+      - 8080:8080
+
+volumes:
+  database_data:

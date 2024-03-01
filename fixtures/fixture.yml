@@ -1,0 +1,15 @@
+App\Entity\Recipe:
+  recipes_{1..10}:
+    name: '<name()>'
+
+App\Entity\User:
+  users_{1..10}:
+    username: '<userName()>'
+    email: '<email()>'
+    password: '<password()>'
+
+App\Entity\Ingredient:
+  ingredients_{1..10}:
+    name: '<name()>'
+    quantity: '<numberBetween(1, 10)>'
+    unit: '<randomElement([''kg'', ''g'', ''l'', ''ml'', ''pcs''])>'
