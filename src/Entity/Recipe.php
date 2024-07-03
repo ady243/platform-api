@@ -3,26 +3,15 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Get;
-use ApiPlatform\Metadata\GetCollection;
-use ApiPlatform\Metadata\Patch;
-use ApiPlatform\Metadata\Post;
-use ApiPlatform\Metadata\Put;
+use ApiPlatform\Core\Bridge\Doctrine\Orm\Filter\SearchFilter;
 use App\Repository\RecipeRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
-#[ApiResource(
-    operations: [
-      new GetCollection(),
-        new Post(),
-        new Get(),
-        new Put(),
-        new Patch()
-    ],
-)]
 #[ORM\Entity(repositoryClass: RecipeRepository::class)]
+#[ApiResource]
+#[ApiFilter(SearchFilter::class, properties: ['name' => 'partial'])]
 class Recipe
 {
     #[ORM\Id]
@@ -33,21 +22,40 @@ class Recipe
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
-    #[ORM\OneToMany(mappedBy: 'relation', targetEntity: Ingredient::class)]
-    private Collection $ingredients;
+    #[ORM\Column(type: Types::ARRAY)]
+    #[Assert\Count(min: 3, minMessage: "Une recette doit avoir au moins 3 ingrédients.")]
+    private array $ingredients = [];
 
-    #[ORM\ManyToMany(targetEntity: User::class, mappedBy: 'relation')]
-    private Collection $users;
+    #[ORM\Column(type: Types::TEXT)]
+    private ?string $instructions = null;
 
-    public function __construct()
-    {
-        $this->ingredients = new ArrayCollection();
-        $this->users = new ArrayCollection();
-    }
+    #[ORM\Column]
+    private ?int $preparationTime = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $difficulty = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $image = null;
+
+    #[ORM\Column]
+    private ?bool $isPublic = null;
+
+    #[ORM\ManyToOne(inversedBy: 'recipes')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Category $category = null;
+
 
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function setId(int $id): static
+    {
+        $this->id = $id;
+
+        return $this;
     }
 
     public function getName(): ?string
@@ -62,59 +70,86 @@ class Recipe
         return $this;
     }
 
-    /**
-     * @return Collection<int, Ingredient>
-     */
-    public function getIngredients(): Collection
+    public function getIngredients(): array
     {
         return $this->ingredients;
     }
 
-    public function addIngredient(Ingredient $ingredient): static
+    public function setIngredients(array $ingredients): static
     {
-        if (!$this->ingredients->contains($ingredient)) {
-            $this->ingredients->add($ingredient);
-            $ingredient->setRelation($this);
-        }
+        $this->ingredients = $ingredients;
 
         return $this;
     }
 
-    public function removeIngredient(Ingredient $ingredient): static
+    public function getInstructions(): ?string
     {
-        if ($this->ingredients->removeElement($ingredient)) {
-            // set the owning side to null (unless already changed)
-            if ($ingredient->getRelation() === $this) {
-                $ingredient->setRelation(null);
-            }
-        }
+        return $this->instructions;
+    }
+
+    public function setInstructions(string $instructions): static
+    {
+        $this->instructions = $instructions;
 
         return $this;
     }
 
-    /**
-     * @return Collection<int, User>
-     */
-    public function getUsers(): Collection
+    public function getPreparationTime(): ?int
     {
-        return $this->users;
+        return $this->preparationTime;
     }
 
-    public function addUser(User $user): static
+    public function setPreparationTime(int $preparationTime): static
     {
-        if (!$this->users->contains($user)) {
-            $this->users->add($user);
-            $user->addRelation($this);
-        }
+        $this->preparationTime = $preparationTime;
 
         return $this;
     }
 
-    public function removeUser(User $user): static
+    public function getDifficulty(): ?string
     {
-        if ($this->users->removeElement($user)) {
-            $user->removeRelation($this);
-        }
+        return $this->difficulty;
+    }
+
+    public function setDifficulty(string $difficulty): static
+    {
+        $this->difficulty = $difficulty;
+
+        return $this;
+    }
+
+    public function getImage(): ?string
+    {
+        return $this->image;
+    }
+
+    public function setImage(?string $image): static
+    {
+        $this->image = $image;
+
+        return $this;
+    }
+
+    public function isIsPublic(): ?bool
+    {
+        return $this->isPublic;
+    }
+
+    public function setIsPublic(bool $isPublic): static
+    {
+        $this->isPublic = $isPublic;
+
+        return $this;
+    }
+
+    public function getCategory(): ?Category
+    {
+        return $this->category;
+    }
+
+    public function setCategory(?Category $category): static
+    {
+        $this->category = $category;
 
         return $this;
     }

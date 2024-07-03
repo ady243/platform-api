@@ -3,53 +3,60 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
-use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
-use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use App\Repository\UserRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-
-#[ApiResource(
-    operations: [
-        new GetCollection(),
-        new Get(),
-        new Post(),
-        new Patch(),
-    ],
-)]
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
+#[ApiResource(
+    normalizationContext: ['groups' => ['read_user']],
+    denormalizationContext: ['groups' => ['write_user']],
+    operations: [
+        new GetCollection(
+            normalizationContext: ['groups' => ['read_user']]
+        ),
+        new Post (
+            denormalizationContext: ['groups' => ['write_user']]
+        )
+    ]
+)]
 class User
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['read_user'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: "Le nom d'utilisateur ne peut pas être vide")]
+    #[Groups(['read_user', 'write_user', 'read_comment'])]
     private ?string $username = null;
 
     #[ORM\Column(length: 255)]
-    private ?string $email = null;
-
-    #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: "Le mot de passe ne peut pas être vide")]
+    #[Groups(['write_user'])]
     private ?string $password = null;
 
-    #[ORM\ManyToMany(targetEntity: Recipe::class, inversedBy: 'users')]
-    private Collection $relation;
-
-    public function __construct()
-    {
-        $this->relation = new ArrayCollection();
-    }
+    #[ORM\Column(type: Types::ARRAY)]
+    #[Groups(['read_user', 'write_user'])]
+    private array $role = [];
 
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function setId(int $id): static
+    {
+        $this->id = $id;
+
+        return $this;
     }
 
     public function getUsername(): ?string
@@ -60,18 +67,6 @@ class User
     public function setUsername(string $username): static
     {
         $this->username = $username;
-
-        return $this;
-    }
-
-    public function getEmail(): ?string
-    {
-        return $this->email;
-    }
-
-    public function setEmail(string $email): static
-    {
-        $this->email = $email;
 
         return $this;
     }
@@ -88,26 +83,14 @@ class User
         return $this;
     }
 
-    /**
-     * @return Collection<int, Recipe>
-     */
-    public function getRelation(): Collection
+    public function getRole(): array
     {
-        return $this->relation;
+        return $this->role;
     }
 
-    public function addRelation(Recipe $relation): static
+    public function setRole(array $role): static
     {
-        if (!$this->relation->contains($relation)) {
-            $this->relation->add($relation);
-        }
-
-        return $this;
-    }
-
-    public function removeRelation(Recipe $relation): static
-    {
-        $this->relation->removeElement($relation);
+        $this->role = $role;
 
         return $this;
     }
